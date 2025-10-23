@@ -1,0 +1,14 @@
+#include <assert.h>
+#include <mpi.h>
+
+int GT_Scatter(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+    void *recvbuf, int recvcount, MPI_Datatype recvtype, int root,
+    MPI_Comm comm)
+{
+	assert(sendtype == MPI_INT && recvtype == MPI_INT);
+	assert(root == 0);
+	
+	/* Your code here (Do not just call MPI_Scatter) */
+	
+	return MPI_SUCCESS;
+}
