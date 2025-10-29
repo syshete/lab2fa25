@@ -2,6 +2,7 @@
 #include <mpi.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 int GT_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
            MPI_Op op, int root, MPI_Comm comm)
@@ -17,23 +18,22 @@ int GT_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype dataty
 
     int *tempbuf = (int *)malloc(count * sizeof(int));
     int *localbuf = (int *)malloc(count * sizeof(int));
-    for (int i = 0; i < count; i++) {
-        localbuf[i] = ((int *)sendbuf)[i];
-    }
+    memcpy(localbuf, sendbuf, count * sizeof(int));
 
     int mask = 1;
     while (mask < size) {
         int partner = rank ^ mask;
-        MPI_Request req;
         if (rank & mask) {
             //Non-Blocking Send
-            MPI_Isend(localbuf, count, datatype, partner, 0, comm, &req);
-            MPI_Wait(&req, MPI_STATUS_IGNORE);
+            MPI_Request send_req;
+            MPI_Isend(localbuf, count, datatype, partner, 0, comm, &send_req);
+            MPI_Wait(&send_req, MPI_STATUS_IGNORE);
             break;
         } else {
             //Non-Blocking Receive
-            MPI_Irecv(tempbuf, count, datatype, partner, 0, comm, &req);
-            MPI_Wait(&req, MPI_STATUS_IGNORE);
+            MPI_Request recv_req;
+            MPI_Irecv(tempbuf, count, datatype, partner, 0, comm, &recv_req);
+            MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
             for (int i = 0; i < count; i++) {
                 localbuf[i] += tempbuf[i];
             }
@@ -42,9 +42,7 @@ int GT_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype dataty
     }
 
     if (rank == root) {
-        for (int i = 0; i < count; i++) {
-            ((int *)recvbuf)[i] = localbuf[i];
-        }
+        memcpy(recvbuf, localbuf, count * sizeof(int));
     }
 
     free(tempbuf);

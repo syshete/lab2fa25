@@ -16,18 +16,19 @@ int GT_Scatter(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    MPI_Request req;
     if (rank == root) {
         memcpy(recvbuf, (int *)sendbuf + rank * sendcount, sendcount * sizeof(int));
         for (int i = 0; i < size; i++) {
             if (i !=root){
-                MPI_Isend((int *)sendbuf + i * sendcount, sendcount, sendtype, i, 0, comm, &req);
-                MPI_Wait(&req, MPI_STATUS_IGNORE);
+                MPI_Request send_req;
+                MPI_Isend((int *)sendbuf + i * sendcount, sendcount, sendtype, i, 0, comm, &send_req);
+                MPI_Wait(&send_req, MPI_STATUS_IGNORE);
             }
         }
     } else {
-        MPI_Irecv(recvbuf, recvcount, recvtype, root, 0, comm, &req);
-        MPI_Wait(&req, MPI_STATUS_IGNORE);
+        MPI_Request recv_req;
+        MPI_Irecv(recvbuf, recvcount, recvtype, root, 0, comm, &recv_req);
+        MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
     }
 
     return MPI_SUCCESS;
