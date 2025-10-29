@@ -23,14 +23,20 @@ int GT_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype dataty
     int mask = 1;
     while (mask < size) {
         int partner = rank ^ mask;
+
+        //Handles when # of processes are not powers of 2
+        if (partner >= size) {
+            mask <<= 1;
+            continue;  
+        }
         if (rank & mask) {
-            //Non-Blocking Send
+            //Blocking Send
             MPI_Request send_req;
             MPI_Isend(localbuf, count, datatype, partner, 0, comm, &send_req);
             MPI_Wait(&send_req, MPI_STATUS_IGNORE);
             break;
         } else {
-            //Non-Blocking Receive
+            //Blocking Receive
             MPI_Request recv_req;
             MPI_Irecv(tempbuf, count, datatype, partner, 0, comm, &recv_req);
             MPI_Wait(&recv_req, MPI_STATUS_IGNORE);

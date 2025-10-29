@@ -20,10 +20,11 @@ int GT_Gather(void *sendbuf, int sendcount, MPI_Datatype sendtype,
         // Root copies its own data into recvbuf
         memcpy((int *)recvbuf + rank * recvcount, sendbuf, sendcount * sizeof(int));
         // Receive from all other ranks
+        int *recvptr = (int *)recvbuf;
         for (int i = 0; i < size; i++) {
             if(i != root){
                 MPI_Request recv_req;
-                MPI_Irecv((int *)recvbuf + i * recvcount, recvcount, recvtype, i, 0, comm, &recv_req);
+                MPI_Irecv(recvptr + i * recvcount, recvcount, recvtype, i, 0, comm, &recv_req);
                 MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
             }
         }
